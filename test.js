@@ -95,7 +95,7 @@ describe('Ethereum Subscriptions', function() {
 });
 
 describe('Smart Contract Events', () => {
-    let wallet = new ethers.Wallet('1ba8c67dd2f366f003a0a956ed6641bb02b4954bd43058532fd29957fdd0fb55', provider);
+    let wallet = new ethers.Wallet('', provider);
     let contract;
 
     beforeEach(async () => {
