@@ -1,5 +1,8 @@
 const assert = require('assert');
 const { ethers} = require('ethers');
+const { expect } = require('chai');
+
+
 
 const provider = new ethers.providers.WebSocketProvider("");
 
@@ -61,5 +64,67 @@ describe('Commom WebSocket Tests', function () {
           assert(ethers.utils.formatEther(gasPrice) > 0);
         });
       });
+
+describe('Ethereum Subscriptions', function() {
+    this.timeout(30000); // This test might take a while, so we increase the timeout
+    let currentBlockNumber;
+
+    before(async () => {
+        currentBlockNumber = await provider.getBlockNumber();
+    });
+
+    it('receives new block headers', async () => {
+        const promise = new Promise((resolve, reject) => {
+            provider.on('block', (blockNumber) => {
+                try {
+                    expect(blockNumber).to.be.a('number');
+                    expect(blockNumber).to.be.greaterThan(currentBlockNumber);
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+                provider.off('block');
+            });
+        });
+        await promise;
+    });
+
+    after(() => {
+        provider.removeAllListeners();
+    });
+});
+
+describe('Smart Contract Events', () => {
+    let wallet = new ethers.Wallet('1ba8c67dd2f366f003a0a956ed6641bb02b4954bd43058532fd29957fdd0fb55', provider);
+    let contract;
+
+    beforeEach(async () => {
+        let factory = new ethers.ContractFactory(MyContract.abi, MyContract.bytecode, wallet);
+        contract = await factory.deploy();
+        await contract.deployed();
+    });
+
+    it('emits event on trigger', async () => {
+        const filter = contract.filters.MyEvent();
+
+        const promise = new Promise((resolve, reject) => {
+            contract.on(filter, (value, event) => {
+                try {
+                    expect(value.toNumber()).to.equal(5);
+                    resolve();
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        });
+
+        await contract.triggerEvent(5);
+        await promise;
+    });
+
+    afterEach(() => {
+        provider.removeAllListeners();
+    });
+});
 
 });
